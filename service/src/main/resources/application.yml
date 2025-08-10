@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:claimsdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL  #closse delay used to keeps the H2 database alive until the JVM stops (so it doesn’t vanish between connections).
+    driver-class-name: org.h2.Driver      # In-memory DB (resets on restart)
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none    # auto-create/update tables
+    show-sql: true        # logs SQL in console
+  h2:
+    console:
+      enabled: true
+      path: /h2-console    # UI to browse DB
+server:
+  port: 8080
