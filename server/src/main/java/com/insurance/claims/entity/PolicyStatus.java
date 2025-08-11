@@ -1,4 +1,4 @@
-package main.java.com.insurance.claims.entity;
+package com.insurance.claims.entity;
 
 public enum PolicyStatus {
     ACTIVE, CANCELLED, EXPIRED

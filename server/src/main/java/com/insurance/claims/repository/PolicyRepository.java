@@ -1,4 +1,4 @@
-package main.java.com.insurance.claims.repository;
+package com.insurance.claims.repository;
 
 import com.insurance.claims.entity.Policy;
 import org.springframework.data.jpa.repository.JpaRepository;
