@@ -161,4 +161,13 @@ public class ClaimService {
             throw new IllegalArgumentException(msg);
         }
     }
+   
+    public void deleteClaim(Long id) {
+    if (!claimRepo.existsById(id)) {
+        throw new Error("ID does not exist");
+    }
+    claimRepo.deleteById(id);
+}
+
+
 }

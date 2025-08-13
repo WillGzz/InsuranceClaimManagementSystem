@@ -20,7 +20,7 @@ import { RoleService } from '../services/role.service';
         <div class="ml-auto flex items-center gap-2">
           <label class="text-sm text-gray-600">Role</label>
           <select
-            class="border rounded px-2 py-1 text-sm cursor-pointer"
+            class="cursor-pointer border rounded px-2 py-1 text-sm"
             [value]="role()"
             (change)="onRoleChange($event)">
             @for (r of roles(); track r) {

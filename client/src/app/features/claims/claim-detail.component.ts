@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';                // NEW
+import { ActivatedRoute, Router } from '@angular/router';                
 import { ClaimService, Claim, UpdateClaimDto, ClaimStatus } from '../../services/claim.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DecimalPipe, NgIf } from '@angular/common';
 import { map } from 'rxjs/operators';
-import { RoleService } from '../../services/role.service';               // NEW
+import { RoleService } from '../../services/role.service';               
 
-type StepKey = 'FILED' | 'REVIEW' | 'DECISION';                           // NEW
+type StepKey = 'FILED' | 'REVIEW' | 'DECISION';                           
 
 @Component({
   selector: 'app-claim-detail',

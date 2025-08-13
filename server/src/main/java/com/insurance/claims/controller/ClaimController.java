@@ -44,7 +44,7 @@ public class ClaimController {
         List<ClaimResponseDto> claims = service.listClaims();
         return claims.isEmpty()
                 ? ResponseEntity.noContent().build()              // 204 if nothing to show
-                : ResponseEntity.ok(claims);                      // 200 with body
+                : ResponseEntity.ok(claims);                      
     }
 
     @GetMapping("/{id}")
@@ -63,6 +63,23 @@ public class ClaimController {
         ClaimResponseDto updated = service.updateClaim(id, req, roleOrDefault(role));
         return ResponseEntity.ok(updated);                         // 200 with body
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Role", required = false) String role) {
+
+        if (role == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (!"Manager".equals(roleOrDefault(role))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();  //403
+        }
+
+        // service.deleteClaim(id);
+        return ResponseEntity.noContent().build();
+    }
+
 
     
     @GetMapping(value = "/{id}.xml", produces = MediaType.APPLICATION_XML_VALUE)

@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 import { DecimalPipe, NgIf } from '@angular/common';
 import { Claim, ClaimService } from '../../services/claim.service';
 import { RoleService } from '../../services/role.service';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-claims-list',
@@ -15,13 +14,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <div class="flex-1"></div>
       <input
         class="px-3 py-2 border rounded w-72"
-        placeholder="Search by id, policy, status…"
+        placeholder="Search by id, policy, status, assignee…"
         [value]="q()"
         (input)="onSearch($event)" />
-      <a routerLink="/claims/new" class="px-3 py-2 rounded bg-blue-600 text-white text-sm">+ New Claim</a>
+      <a routerLink="/claims/new" class="px-3 py-2 rounded bg-blue-600 text-white text-sm cursor-pointer">+ New Claim</a>
     </div>
 
-    @if (rows(); as list) {
+    @if (rows().length; as _len) {
       <table class="w-full border text-sm">
         <thead class="bg-gray-50">
           <tr>
@@ -35,7 +34,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
           </tr>
         </thead>
         <tbody>
-          @for (c of list; track c.id) {
+          @for (c of rows(); track c.id) {
             <tr class="odd:bg-white even:bg-gray-50">
               <td class="p-2 border">{{ c.id }}</td>
               <td class="p-2 border">{{ c.policyNumber }}</td>
@@ -58,7 +57,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
         </tbody>
       </table>
     } @else {
-      <div class="text-sm text-gray-600">Loading…</div>
+      <div class="text-sm text-gray-600">No claims yet.</div>
     }
   `
 })
@@ -66,15 +65,17 @@ export class ClaimsListComponent {
   private api = inject(ClaimService);
   readonly roleSvc = inject(RoleService);
 
-  private readonly _claims$ = this.api.list();
-  private readonly _claims = toSignal<Claim[] | null>(this._claims$, { initialValue: null });
-
+  // ✅ writable list we can update
+  private all = signal<Claim[]>([]);
   q = signal('');
 
+  constructor() {
+    this.api.list().subscribe(list => this.all.set(list ?? []));
+  }
+
   rows = computed(() => {
-    const data = this._claims();
-    if (!data) return null;
     const term = this.q().trim().toLowerCase();
+    const data = this.all();
     if (!term) return data;
     return data.filter(c =>
       (`${c.id}`).includes(term) ||
@@ -92,10 +93,7 @@ export class ClaimsListComponent {
   onDelete(id: number) {
     if (!confirm(`Delete claim #${id}?`)) return;
     this.api.delete(id).subscribe({
-      next: () => {
-        const cur = this._claims();
-        if (cur) (this as any)._claims.set(cur.filter(c => c.id !== id));
-      },
+      next: () => this.all.update(arr => arr.filter(c => c.id !== id)),
       error: err => alert('Delete failed (check role/server): ' + (err?.error?.message ?? err.statusText ?? err))
     });
   }
@@ -104,4 +102,5 @@ export class ClaimsListComponent {
   riskClass = (r: number) =>
     r >= 61 ? 'bg-red-100 text-red-700' : r >= 31 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700';
 }
+
 
