@@ -14,7 +14,7 @@ import { RoleService } from '../../services/role.service';
       <div class="flex-1"></div>
       <input
         class="px-3 py-2 border rounded w-72"
-        placeholder="Search by id, policy, status, assignee…"
+        placeholder="Search by id, policy, status…"
         [value]="q()"
         (input)="onSearch($event)" />
       <a routerLink="/claims/new" class="px-3 py-2 rounded bg-blue-600 text-white text-sm cursor-pointer">+ New Claim</a>
