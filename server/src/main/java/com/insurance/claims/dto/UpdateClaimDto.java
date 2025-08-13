@@ -4,14 +4,14 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 public class UpdateClaimDto {
-    // allow only fields a user may change via UI
+    
 
-    private String status;   // NEW/IN_REVIEW/APPROVED/DENIED/CLOSED (server validates)
+    private String status;   // NEW/IN_REVIEW/APPROVED/DENIED/CLOSED 
 
-    private String assignee; // adjuster id/email (server validates)
+    private String assignee; // claim handler
     
     @Positive
-    private BigDecimal amount; // optional correction
+    private BigDecimal amount;
 
     @Size(max = 4000)
     private String description;

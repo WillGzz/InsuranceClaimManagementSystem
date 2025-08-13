@@ -14,7 +14,7 @@ public class Policy {
     private Long id;
 
     @NotBlank
-    @Column(name = "policy_number", unique = true, nullable = false, length = 64)
+    @Column(name = "policy_number", unique = true, nullable = false, length = 30)
     private String policyNumber;
 
     @NotBlank

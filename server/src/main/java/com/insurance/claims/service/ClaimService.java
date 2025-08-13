@@ -27,10 +27,9 @@ public class ClaimService {
         this.policyRepo = policyRepo;
     }
 
-    // ===== Public API =====
 
     public ClaimResponseDto createClaim(CreateClaimDto req, String role) {
-        // Customers (and staff) can file; in a real app you’d enforce stricter RBAC.
+        // Customers (and staff) can file
         LocalDate today = LocalDate.now();
         Policy policy = policyRepo.findActivePolicy(req.getPolicyNumber(), today)
                 .orElseThrow(() -> new IllegalArgumentException("Policy not active or invalid for today"));
@@ -64,8 +63,9 @@ public class ClaimService {
         Claim claim = claimRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Claim not found"));
 
-        // ===== Role-based guards (simple demo) =====
-        // Adjuster can edit their assigned claims; Manager can edit all; Customers cannot edit after create; Auditors read-only.
+        // Roles 
+        // Adjuster can edit their assigned claims; Manager can edit all; Customers
+        // cannot edit after create; Auditors read-only.
         if ("Customer".equalsIgnoreCase(role)) {
             throw new SecurityException("Customers cannot update existing claims");
         }
@@ -116,23 +116,29 @@ public class ClaimService {
     }
 
     private int computeRiskScore(CreateClaimDto req, Policy policy) {
+
         int score = 0;
-        // High relative to limit
+        // If the claim amount is more than 30% of the policy’s coverage limit, add 40 points.
         if (policy.getLimit() != null && req.getAmount() != null) {
             BigDecimal thirtyPct = policy.getLimit().multiply(new BigDecimal("0.30"));
-            if (req.getAmount().compareTo(thirtyPct) > 0) score += 40;
+            if (req.getAmount().compareTo(thirtyPct) > 0)
+                score += 40;
         }
-        // Early in policy period (within 14 days)
+        // If the claim is filed within 14 days of the policy start date, add 20 points.
         long daysSinceStart = ChronoUnit.DAYS.between(policy.getEffectiveFrom(), LocalDate.now());
-        if (daysSinceStart <= 14) score += 20;
+        if (daysSinceStart <= 14)
+            score += 20;
+            
         // Certain types considered higher risk
         if (req.getType() != null) {
             String t = req.getType().toUpperCase();
-            if ("THEFT".equals(t) || "INJURY".equals(t) || "FIRE".equals(t)) score += 15;
+            if ("THEFT".equals(t) || "INJURY".equals(t) || "FIRE".equals(t))
+                score += 15;
         }
         // Prior claims last 12 months
         long prev = claimRepo.countByPolicyAndReportedDateAfter(policy, LocalDate.now().minusMonths(12));
-        if (prev > 2) score += 10;
+        if (prev > 2)
+            score += 10;
 
         return Math.min(score, 100);
     }

@@ -15,12 +15,12 @@ public class Claim {
     private Long id;
 
     @NotNull
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)  //fetching policy on when needed
     @JoinColumn(name = "policy_id")
     private Policy policy;
 
     @NotNull
-    @PastOrPresent
+    @PastOrPresent  //only allow for current and present date
     private LocalDate lossDate;
 
     @NotNull
@@ -44,13 +44,13 @@ public class Claim {
     private ClaimStatus status = ClaimStatus.NEW;
 
     @Size(max = 120)
-    private String assignee; // adjuster username/email
+    private String assignee; //person assigned to review, process, and close the claim.
 
     @Min(0)
     @Max(100)
-    private Integer riskScore = 0; // simple rules-based score
-
-    private LocalDateTime slaDueAt; // e.g., reportedDate + 48h
+    private Integer riskScore = 0; // potential risk of a claim being fraudulent, high-cost, or complicated. Cost here increments financial risk for insurer
+   
+    private LocalDateTime slaDueAt; //  time commitment the insurer makes to respond to or resolve a claim. 48h
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

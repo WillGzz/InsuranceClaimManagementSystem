@@ -29,10 +29,10 @@ public class ClaimController {
     @PostMapping
     public ResponseEntity<ClaimResponseDto> create(
             @Valid @RequestBody CreateClaimDto req,
-            @RequestHeader(value = "X-Role", required = false) String role
-    ) {
-        if (role == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401 if no role header (MVP "auth")
+            @RequestHeader(value = "X-Role", required = false) String role) {
+      
+                if (role == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401 if no role header 
         }
         ClaimResponseDto created = service.createClaim(req, roleOrDefault(role));
         URI location = URI.create("/api/claims/" + created.getId());
@@ -49,17 +49,14 @@ public class ClaimController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ClaimResponseDto> get(@PathVariable Long id) {
-        // If service throws NotFound/IllegalArgument, your @RestControllerAdvice can map to 404/400.
-        // If you don't use advice, wrap in try/catch and return 404 here.
-        return ResponseEntity.ok(service.getClaim(id));           // 200 with body
+        return ResponseEntity.ok(service.getClaim(id));           
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ClaimResponseDto> update(
             @PathVariable Long id,
             @RequestBody UpdateClaimDto req,
-            @RequestHeader(value = "X-Role", required = false) String role
-    ) {
+            @RequestHeader(value = "X-Role", required = false) String role) {
         if (role == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
         }
@@ -67,7 +64,7 @@ public class ClaimController {
         return ResponseEntity.ok(updated);                         // 200 with body
     }
 
-    // Simple XML endpoint for demo purposes
+    
     @GetMapping(value = "/{id}.xml", produces = MediaType.APPLICATION_XML_VALUE)
     public ResponseEntity<String> getAsXml(@PathVariable Long id) {
         ClaimResponseDto c = service.getClaim(id);
@@ -92,7 +89,7 @@ public class ClaimController {
                 c.getAmount(),
                 c.getRiskScore() == null ? 0 : c.getRiskScore()
         );
-        return ResponseEntity.ok(xml);                              // 200 with XML body
+        return ResponseEntity.ok(xml);                          
     }
 
     private String safe(String s) { return s == null ? "" : s; }
