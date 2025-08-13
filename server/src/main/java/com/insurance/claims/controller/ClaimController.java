@@ -76,7 +76,7 @@ public class ClaimController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();  //403
         }
 
-        // service.deleteClaim(id);
+        service.deleteClaim(id);
         return ResponseEntity.noContent().build();
     }
 
