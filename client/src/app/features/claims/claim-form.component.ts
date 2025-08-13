@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ClaimService, ClaimType } from '../../services/claim.service';
+import { RouterLink } from '@angular/router';                     
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-claim-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 class="text-xl font-semibold mb-4">New Claim</h2>
@@ -42,7 +43,7 @@ import { Router } from '@angular/router';
 
       <div class="col-span-2 flex justify-end gap-2">
         <a routerLink="/claims" class="px-3 py-2 rounded border">Cancel</a>
-        <button class="px-3 py-2 rounded bg-blue-600 text-white" type="submit" [disabled]="form.invalid">Submit</button>
+        <button class="px-3 py-2 rounded bg-blue-600 text-white cursor-pointer" type="submit" [disabled]="form.invalid">Submit</button>
       </div>
     </form>
   `
@@ -62,16 +63,23 @@ export class ClaimFormComponent {
     description: ['']
   });
 
-  submit(): void {
-    if (this.form.invalid) return;
-    const v = this.form.value;
-    const payload = {
-      policyNumber: v.policyNumber!,
-      lossDate: new Date(v.lossDate as string).toISOString().slice(0,10),
-      type: v.type!,
-      description: v.description ?? '',
-      amount: Number(v.amount)
-    };
-    this.api.create(payload).subscribe(c => this.router.navigate(['/claims', c.id]));
-  }
+submit(): void {
+  if (this.form.invalid) return;
+  const v = this.form.value;
+
+  const payload = {
+    policyNumber: v.policyNumber!,          // string
+    lossDate: v.lossDate as string,         // keep 'YYYY-MM-DD' (no toISOString)
+    type: v.type!,                          // e.g. 'ACCIDENT'
+    description: v.description ?? '',
+    amount: Number(v.amount)                // > 0
+  };
+
+  // console.log('POST /api/claims', payload);
+  this.api.create(payload).subscribe({
+    next: c => this.router.navigate(['/claims', c.id]),
+    error: err => console.error('Create claim failed', err)
+  });
+}
+
 }

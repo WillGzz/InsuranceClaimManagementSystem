@@ -1,11 +1,11 @@
 import { Injectable, signal } from '@angular/core';
 
-export type Role = 'Customer' | 'Adjuster' | 'Manager' | 'Auditor';
+export type Role = 'Customer' | 'Manager';
 
 @Injectable({ providedIn: 'root' })
 export class RoleService {
   private readonly _role = signal<Role>('Customer');
-  private readonly _roles = signal<Role[]>(['Customer','Adjuster','Manager','Auditor']);
+  private readonly _roles = signal<Role[]>(['Customer','Manager']);
 
   role = this._role.asReadonly();
   roles = this._roles.asReadonly();

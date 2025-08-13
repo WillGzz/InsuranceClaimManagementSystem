@@ -43,4 +43,5 @@ export class ClaimService {
   get(id: number): Observable<Claim> { return this.http.get<Claim>(`${this.base}/${id}`); }
   create(body: CreateClaimDto): Observable<Claim> { return this.http.post<Claim>(this.base, body); }
   update(id: number, body: UpdateClaimDto): Observable<Claim> { return this.http.put<Claim>(`${this.base}/${id}`, body); }
+  delete(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/${id}`); }
 }
