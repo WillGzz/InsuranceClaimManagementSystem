@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { DecimalPipe, NgIf } from '@angular/common';
 import { Claim, ClaimService } from '../../services/claim.service';
 import { RoleService } from '../../services/role.service';
+import { ClaimStatus } from '../../services/claim.service';
 
 @Component({
   selector: 'app-claims-list',
@@ -29,7 +30,12 @@ import { RoleService } from '../../services/role.service';
             <th class="p-2 border text-left">Loss Date</th>
             <th class="p-2 border text-left">Amount</th>
             <th class="p-2 border text-left">Status</th>
-            <th class="p-2 border text-left">Risk</th>
+
+            <!-- Risk header hidden for Customer -->
+            @if (roleSvc.role() !== 'Customer') {
+              <th class="p-2 border text-left">Risk</th>
+            }
+
             <th class="p-2 border"></th>
           </tr>
         </thead>
@@ -40,12 +46,19 @@ import { RoleService } from '../../services/role.service';
               <td class="p-2 border">{{ c.policyNumber }}</td>
               <td class="p-2 border">{{ c.lossDate }}</td>
               <td class="p-2 border">{{ c.amount | number:'1.2-2' }}</td>
-              <td class="p-2 border"><span class="px-2 py-0.5 rounded bg-gray-200">{{ c.status }}</span></td>
-              <td class="p-2 border">
-                <span class="px-2 py-0.5 rounded" [class]="riskClass(c.riskScore ?? 0)">
-                  {{ riskLabel(c.riskScore ?? 0) }}
-                </span>
+              <td class="p-2 border"><span class="px-2 py-0.5 rounded" [class]="statusClass(c.status)">
+                 {{ c.status }}</span>
               </td>
+
+              <!-- Risk cell hidden for Customer -->
+              @if (roleSvc.role() !== 'Customer') {
+                <td class="p-2 border">
+                  <span class="px-2 py-0.5 rounded" [class]="riskClass(c.riskScore ?? 0)">
+                    {{ riskLabel(c.riskScore ?? 0) }}
+                  </span>
+                </td>
+              }
+
               <td class="p-2 border text-right space-x-3">
                 <a [routerLink]="['/claims', c.id]" class="text-blue-600 hover:underline">Open</a>
                 <button *ngIf="roleSvc.role()==='Manager'"
@@ -65,7 +78,7 @@ export class ClaimsListComponent {
   private api = inject(ClaimService);
   readonly roleSvc = inject(RoleService);
 
-  // ✅ writable list we can update
+  // writable list we can update
   private all = signal<Claim[]>([]);
   q = signal('');
 
@@ -90,6 +103,15 @@ export class ClaimsListComponent {
     this.q.set(v);
   }
 
+  statusClass = (s: ClaimStatus) =>
+  ({
+    NEW:       'bg-sky-100 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800/60',
+    IN_REVIEW: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800/60',
+    APPROVED:  'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800/60',
+    DENIED:    'bg-rose-100 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:ring-rose-800/60',
+    CLOSED:    'bg-slate-200 text-slate-700 ring-1 ring-slate-300 dark:bg-slate-900/30 dark:text-slate-300 dark:ring-slate-800/60',
+  } as const)[s] ?? 'bg-gray-200 text-gray-700 ring-1 ring-gray-300';
+
   onDelete(id: number) {
     if (!confirm(`Delete claim #${id}?`)) return;
     this.api.delete(id).subscribe({
@@ -98,9 +120,9 @@ export class ClaimsListComponent {
     });
   }
 
+  
+
   riskLabel = (r: number) => r >= 61 ? 'HIGH' : r >= 31 ? 'MED' : 'LOW';
   riskClass = (r: number) =>
     r >= 61 ? 'bg-red-100 text-red-700' : r >= 31 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700';
 }
-
-
