@@ -1,3 +1,4 @@
+
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ClaimService, Claim, UpdateClaimDto, ClaimStatus } from '../../services/claim.service';
@@ -27,18 +28,13 @@ type StepKey = 'FILED' | 'REVIEW' | 'DECISION';
       </div>
 
       <div class="grid grid-cols-2 gap-4 mb-6">
-        <!-- Summary --> 
+        <!-- Summary -->
         <div class="p-3 border rounded">
           <div><span class="text-gray-500">Policy:</span> <b>{{ c.policyNumber }}</b></div>
           <div>
-             <span class="text-gray-500">Status:</span>
-             <span class="ml-1 px-2 rounded" [class]="statusClass(c.status)">
-                 {{ c.status }}
-              </span>
-           </div>
-
-
-          <!-- Risk (hidden for Customer) -->
+            <span class="text-gray-500">Status:</span>
+            <span class="ml-1 px-2 rounded" [class]="statusClass(c.status)">{{ c.status }}</span>
+          </div>
           @if (roleSvc.role() !== 'Customer') {
             <div>
               <span class="text-gray-500">Risk:</span>
@@ -50,15 +46,14 @@ type StepKey = 'FILED' | 'REVIEW' | 'DECISION';
               </span>
             </div>
           }
-
           <div><span class="text-gray-500">Loss:</span> {{ c.lossDate }}</div>
           <div><span class="text-gray-500">Reported:</span> {{ c.reportedDate }}</div>
           <div><span class="text-gray-500">Amount:</span> {{ c.amount | number:'1.2-2' }}</div>
           @if (c.slaDueAt) { <div><span class="text-gray-500">SLA Due:</span> {{ c.slaDueAt }}</div> }
         </div>
 
-        <!-- Update form (hidden for Customer) -->
-        @if (roleSvc.role() !== 'Customer') {
+        <!-- Update form (hidden for Customer & Auditor) -->
+        @if (roleSvc.role() !== 'Customer' && roleSvc.role() !== 'Auditor' && roleSvc.role() !== 'Adjuster') {
           <div class="p-3 border rounded">
             <div class="mb-2">
               <label class="block text-sm text-gray-700 mb-1">Update Status</label>
@@ -78,6 +73,38 @@ type StepKey = 'FILED' | 'REVIEW' | 'DECISION';
           </div>
         }
       </div>
+
+      <!-- Adjuster Tools -->
+      @if (roleSvc.role()==='Adjuster') {
+        <section class="border rounded p-4 mb-6">
+          <h3 class="font-semibold mb-3">Adjuster Tools</h3>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-700 mb-1">Internal Note</label>
+              <textarea rows="3" class="w-full border rounded px-3 py-2"
+                        [value]="adjusterNote()"
+                        (input)="onNoteInput($event)"
+                        placeholder="Only visible to staff (not customers)"></textarea>
+              <div class="mt-2">
+                <button class="px-3 py-2 rounded border cursor-pointer"
+                        (click)="addNote()">Add Note</button>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm text-gray-700 mb-1">Preliminary Estimate (USD)</label>
+              <input type="number" class="w-full border rounded px-3 py-2"
+                     [value]="estimate() ?? ''"
+                     (input)="onEstimateInput($event)">
+              <div class="mt-2 space-x-2">
+                <button class="px-3 py-2 rounded border cursor-pointer" (click)="saveEstimate()">Save Estimate</button>
+                <button class="px-3 py-2 rounded bg-amber-600 text-white cursor-pointer" (click)="startReview()">Start Review</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      }
 
       <!-- Progress section -->
       <section class="border rounded p-4">
@@ -117,16 +144,15 @@ export class ClaimDetailComponent {
   private router = inject(Router);
   readonly roleSvc = inject(RoleService);
 
-  // id from route
   readonly id = toSignal(this.route.paramMap.pipe(map(pm => Number(pm.get('id')))), { initialValue: 0 });
 
-  // state
   readonly claim = signal<Claim | null>(null);
   readonly statuses: ClaimStatus[] = ['NEW','IN_REVIEW','APPROVED','DENIED','CLOSED'];
   readonly status = signal<ClaimStatus>('NEW');
   readonly assignee = signal<string>('');
+  readonly adjusterNote = signal<string>('');
+  readonly estimate = signal<number | null>(null);
 
-  // load claim whenever id changes
   private load = effect(() => {
     const currentId = this.id();
     if (!currentId) return;
@@ -134,8 +160,20 @@ export class ClaimDetailComponent {
       this.claim.set(c);
       this.status.set(c.status);
       this.assignee.set(c.assignee ?? '');
+      // Optional: hydrate estimate if your API returns it
+      // this.estimate.set((c as any).estimate ?? null);
     });
   });
+
+  // Status pill
+  statusClass = (s: ClaimStatus) =>
+    ({
+      NEW:       'bg-sky-100 text-sm py-0.2 pr-4  text-sky-700 ring-1 ring-sky-200',
+      IN_REVIEW: 'bg-amber-100 text-sm py-0.2 pr-4 text-amber-700 ring-1 ring-amber-200',
+      APPROVED:  'bg-emerald-100 text-sm py-0.2 pr-4  text-emerald-700 ring-1 ring-emerald-200',
+      DENIED:    'bg-rose-100 text-sm py-0.2 pr-4 text-rose-700 ring-1 ring-rose-200',
+      CLOSED:    'bg-slate-200 text-sm py-0.2 pr-4 text-slate-700 ring-1 ring-slate-300',
+    } as const)[s] ?? 'bg-gray-200 text-sm py-0.2 pr-4 text-gray-700 ring-1 ring-gray-300';
 
   // Progress helpers
   stepDone(step: StepKey): boolean {
@@ -143,22 +181,15 @@ export class ClaimDetailComponent {
     if (!s) return false;
     if (step === 'FILED') return true;
     if (step === 'REVIEW') return s === 'IN_REVIEW' || s === 'APPROVED' || s === 'DENIED' || s === 'CLOSED';
-    // DECISION:
     return s === 'APPROVED' || s === 'DENIED' || s === 'CLOSED';
   }
   dot(done: boolean) { return done ? 'bg-blue-600' : 'bg-gray-300'; }
 
-  // Update
+  // Generic update (blocked for Customer & Auditor)
   save(): void {
-    // Runtime guard: Customers can’t update
-    if (this.roleSvc.role() === 'Customer') {
-      console.warn('Customers cannot update claims.');
-      return;
-    }
-    
+    if (this.roleSvc.role() === 'Customer' || this.roleSvc.role() === 'Auditor') return;
 
     const c = this.claim(); if (!c) return;
-
     const body: UpdateClaimDto = {};
     const s = this.status();   if (s) body.status = s;
     const a = this.assignee(); if (a) body.assignee = a;
@@ -173,14 +204,40 @@ export class ClaimDetailComponent {
     });
   }
 
-    statusClass = (s: ClaimStatus) =>
-    ({
-      NEW:       'bg-sky-100 text-sm py-0.2 pr-4  text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800/60',
-      IN_REVIEW: 'bg-amber-100 text-sm py-0.2 pr-4 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800/60',
-      APPROVED:  'bg-emerald-100 text-sm py-0.2 pr-4  text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800/60',
-      DENIED:    'bg-rose-100 text-sm py-0.2 pr-4 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:ring-rose-800/60',
-      CLOSED:    'bg-slate-200 text-sm py-0.2 pr-4 text-slate-700 ring-1 ring-slate-300 dark:bg-slate-900/30 dark:text-slate-300 dark:ring-slate-800/60',
-    } as const)[s] ?? 'bg-gray-200  text-sm py-0.2 pr-4 text-gray-700 ring-1 ring-gray-300';
+  // Adjuster: inputs
+  onNoteInput(e: Event)     { this.adjusterNote.set((e.target as HTMLTextAreaElement).value ?? ''); }
+  onEstimateInput(e: Event) { const v = (e.target as HTMLInputElement).value; this.estimate.set(v ? Number(v) : null); }
+
+  // Adjuster: actions (these assume backend accepts extra fields; if not, they no-op safely)
+  addNote() {
+    const note = (this.adjusterNote() || '').trim();
+    const c = this.claim(); if (!c || !note) return;
+    const body: UpdateClaimDto = { /* backend contract idea */ } as any;
+    (body as any).note = note;
+    this.api.update(c.id, body).subscribe({
+      next: next => { this.claim.set(next); this.adjusterNote.set(''); },
+      error: err => console.error('Add note failed', err)
+    });
+  }
+
+  saveEstimate() {
+    const est = this.estimate();
+    const c = this.claim(); if (!c || est == null || isNaN(est)) return;
+    const body: UpdateClaimDto = { } as any;
+    (body as any).estimate = est;
+    this.api.update(c.id, body).subscribe({
+      next: next => this.claim.set(next),
+      error: err => console.error('Save estimate failed', err)
+    });
+  }
+
+  startReview() {
+    const c = this.claim(); if (!c) return;
+    this.api.update(c.id, { status: 'IN_REVIEW' }).subscribe({
+      next: next => { this.claim.set(next); this.status.set(next.status); },
+      error: err => console.error('Start review failed', err)
+    });
+  }
 
   onStatusChange(e: Event) { this.status.set((e.target as HTMLSelectElement).value as ClaimStatus); }
   onAssigneeInput(e: Event) { this.assignee.set((e.target as HTMLInputElement).value ?? ''); }
@@ -188,7 +245,6 @@ export class ClaimDetailComponent {
   onDelete() {
     const c = this.claim(); if (!c) return;
     if (!confirm(`Delete claim #${c.id}?`)) return;
-
     this.api.delete(c.id).subscribe({
       next: () => this.router.navigate(['/claims']),
       error: err => alert('Delete failed (check role/server): ' + (err?.error?.message ?? err.statusText ?? err))

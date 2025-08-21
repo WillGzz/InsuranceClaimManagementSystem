@@ -14,7 +14,6 @@ import { RoleService } from '../services/role.service';
 
         <nav class="flex gap-3">
           <a routerLink="/claims" class="text-sm hover:underline">Claims</a>
-          <a routerLink="/claims/new" class="text-sm hover:underline">New Claim</a>
         </nav>
 
         <div class="ml-auto flex items-center gap-2">

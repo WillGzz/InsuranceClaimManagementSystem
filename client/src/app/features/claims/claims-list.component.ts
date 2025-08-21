@@ -13,13 +13,22 @@ import { ClaimStatus } from '../../services/claim.service';
     <div class="flex justify-between items-center mb-4 gap-3">
       <h2 class="text-xl font-semibold">Claims</h2>
       <div class="flex-1"></div>
+
       <input
         class="px-3 py-2 border rounded w-72"
         placeholder="Search by id, policy, status…"
         [value]="q()"
         (input)="onSearch($event)" />
+
+      @if (roleSvc.role()==='Auditor') {
+        <button class="px-3 py-2 rounded border text-sm cursor-pointer" (click)="exportCsv()">
+          Export CSV
+        </button>
+      }
+      @if (roleSvc.role() !== 'Auditor' && roleSvc.role() !== 'Adjuster') {
       <a routerLink="/claims/new" class="px-3 py-2 rounded bg-blue-600 text-white text-sm cursor-pointer">+ New Claim</a>
-    </div>
+      }
+      </div>
 
     @if (rows().length; as _len) {
       <table class="w-full border text-sm">
@@ -46,8 +55,10 @@ import { ClaimStatus } from '../../services/claim.service';
               <td class="p-2 border">{{ c.policyNumber }}</td>
               <td class="p-2 border">{{ c.lossDate }}</td>
               <td class="p-2 border">{{ c.amount | number:'1.2-2' }}</td>
-              <td class="p-2 border"><span class="px-2 py-0.5 rounded" [class]="statusClass(c.status)">
-                 {{ c.status }}</span>
+              <td class="p-2 border">
+                <span class="px-2 py-0.5 rounded" [class]="statusClass(c.status)">
+                  {{ c.status }}
+                </span>
               </td>
 
               <!-- Risk cell hidden for Customer -->
@@ -104,13 +115,13 @@ export class ClaimsListComponent {
   }
 
   statusClass = (s: ClaimStatus) =>
-  ({
-    NEW:       'bg-sky-100 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800/60',
-    IN_REVIEW: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800/60',
-    APPROVED:  'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800/60',
-    DENIED:    'bg-rose-100 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:ring-rose-800/60',
-    CLOSED:    'bg-slate-200 text-slate-700 ring-1 ring-slate-300 dark:bg-slate-900/30 dark:text-slate-300 dark:ring-slate-800/60',
-  } as const)[s] ?? 'bg-gray-200 text-gray-700 ring-1 ring-gray-300';
+    ({
+      NEW:       'bg-sky-100 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800/60',
+      IN_REVIEW: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800/60',
+      APPROVED:  'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800/60',
+      DENIED:    'bg-rose-100 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:ring-rose-800/60',
+      CLOSED:    'bg-slate-200 text-slate-700 ring-1 ring-slate-300 dark:bg-slate-900/30 dark:text-slate-300 dark:ring-slate-800/60',
+    } as const)[s] ?? 'bg-gray-200 text-gray-700 ring-1 ring-gray-300';
 
   onDelete(id: number) {
     if (!confirm(`Delete claim #${id}?`)) return;
@@ -120,9 +131,49 @@ export class ClaimsListComponent {
     });
   }
 
-  
-
   riskLabel = (r: number) => r >= 61 ? 'HIGH' : r >= 31 ? 'MED' : 'LOW';
   riskClass = (r: number) =>
     r >= 61 ? 'bg-red-100 text-red-700' : r >= 31 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700';
+
+  // Auditor: CSV export (exports currently visible rows)
+  exportCsv() {
+    const items = this.rows();
+    if (!items.length) {
+      alert('No rows to export.');
+      return;
+    }
+
+    const esc = (v: unknown) => {
+      const s = v == null ? '' : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const header = ['id','policyNumber','lossDate','amount','status','assignee','riskScore'];
+    const lines = [header.join(',')];
+
+    for (const c of items) {
+      lines.push([
+        esc(c.id),
+        esc(c.policyNumber),
+        esc(c.lossDate),
+        esc(c.amount),
+        esc(c.status),
+        esc(c.assignee ?? ''),
+        esc((c as any).riskScore ?? '')
+      ].join(','));
+    }
+
+    const csv = lines.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    const stamp = new Date().toISOString().slice(0,10);
+    a.download = `claims-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 }
