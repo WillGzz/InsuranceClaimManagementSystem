@@ -160,8 +160,7 @@ export class ClaimDetailComponent {
       this.claim.set(c);
       this.status.set(c.status);
       this.assignee.set(c.assignee ?? '');
-      // Optional: hydrate estimate if your API returns it
-      // this.estimate.set((c as any).estimate ?? null);
+ 
     });
   });
 
@@ -204,7 +203,7 @@ export class ClaimDetailComponent {
     });
   }
 
-  // Adjuster: inputs
+  
   onNoteInput(e: Event)     { this.adjusterNote.set((e.target as HTMLTextAreaElement).value ?? ''); }
   onEstimateInput(e: Event) { const v = (e.target as HTMLInputElement).value; this.estimate.set(v ? Number(v) : null); }
 
