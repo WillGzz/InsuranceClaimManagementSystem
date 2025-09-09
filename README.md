@@ -1,5 +1,5 @@
 
-# Project: Insurance Claim Management App (Spring Boot + Angular)
+# Project: Insurance Claim Management App
 
 ## Background
 This is a full stack app that focuses on  managing insurance policies and claims. The backend is a Spring Boot REST API that handles 
