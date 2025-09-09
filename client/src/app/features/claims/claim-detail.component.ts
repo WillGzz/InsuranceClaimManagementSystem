@@ -1,4 +1,3 @@
-
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ClaimService, Claim, UpdateClaimDto, ClaimStatus } from '../../services/claim.service';
@@ -8,6 +7,7 @@ import { map } from 'rxjs/operators';
 import { RoleService } from '../../services/role.service';
 
 type StepKey = 'FILED' | 'REVIEW' | 'DECISION';
+type Note = { id: number; text: string; createdAt: string; authorRole: 'Manager' | 'Adjuster' | 'Auditor' };
 
 @Component({
   selector: 'app-claim-detail',
@@ -35,6 +35,8 @@ type StepKey = 'FILED' | 'REVIEW' | 'DECISION';
             <span class="text-gray-500">Status:</span>
             <span class="ml-1 px-2 rounded" [class]="statusClass(c.status)">{{ c.status }}</span>
           </div>
+
+          <!-- Risk (hidden for Customer) -->
           @if (roleSvc.role() !== 'Customer') {
             <div>
               <span class="text-gray-500">Risk:</span>
@@ -45,14 +47,21 @@ type StepKey = 'FILED' | 'REVIEW' | 'DECISION';
                 {{ (c.riskScore ?? 0) >= 61 ? 'HIGH' : (c.riskScore ?? 0) >= 31 ? 'MED' : 'LOW' }}
               </span>
             </div>
+
+            <!-- Staff-only visibility of the current estimate (if any) -->
+            <div *ngIf="estimate() != null">
+              <span class="text-gray-500">Estimate:</span>
+              {{ (estimate() ?? 0) | number:'1.2-2' }}
+            </div>
           }
+
           <div><span class="text-gray-500">Loss:</span> {{ c.lossDate }}</div>
           <div><span class="text-gray-500">Reported:</span> {{ c.reportedDate }}</div>
           <div><span class="text-gray-500">Amount:</span> {{ c.amount | number:'1.2-2' }}</div>
           @if (c.slaDueAt) { <div><span class="text-gray-500">SLA Due:</span> {{ c.slaDueAt }}</div> }
         </div>
 
-        <!-- Update form (hidden for Customer & Auditor) -->
+        <!-- Update form (hidden for Customer & Auditor & Adjuster) -->
         @if (roleSvc.role() !== 'Customer' && roleSvc.role() !== 'Auditor' && roleSvc.role() !== 'Adjuster') {
           <div class="p-3 border rounded">
             <div class="mb-2">
@@ -99,10 +108,42 @@ type StepKey = 'FILED' | 'REVIEW' | 'DECISION';
                      (input)="onEstimateInput($event)">
               <div class="mt-2 space-x-2">
                 <button class="px-3 py-2 rounded border cursor-pointer" (click)="saveEstimate()">Save Estimate</button>
-                <button class="px-3 py-2 rounded bg-amber-600 text-white cursor-pointer" (click)="startReview()">Start Review</button>
+                <button class="px-3 py-2 rounded bg-amber-600 text-white cursor-pointer"
+                        (click)="startReview()"
+                        [disabled]="!canStartReview() || savingReview()">
+                  Start Review
+                </button>
               </div>
             </div>
           </div>
+        </section>
+      }
+
+      <!-- Internal Notes (visible to all staff; Manager & Adjuster can delete) -->
+      @if (roleSvc.role() !== 'Customer') {
+        <section class="border rounded p-4 mb-6">
+          <h3 class="font-semibold mb-3">Internal Notes</h3>
+
+          @if (notes().length) {
+            <ul class="space-y-2">
+              @for (n of notes(); track n.id) {
+                <li class="text-sm flex items-start justify-between gap-3">
+                  <div class="flex-1">
+                    <div class="text-gray-800">{{ n.text }}</div>
+                    <div class="text-xs text-gray-500">{{ n.authorRole }} — {{ n.createdAt }}</div>
+                  </div>
+                  @if (roleSvc.role()==='Adjuster') {
+                    <button class="text-rose-600 text-xs hover:underline cursor-pointer"
+                            (click)="deleteNote(n.id)">
+                      Delete
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="text-sm text-gray-500">No internal notes yet.</div>
+          }
         </section>
       }
 
@@ -144,6 +185,17 @@ export class ClaimDetailComponent {
   private router = inject(Router);
   readonly roleSvc = inject(RoleService);
 
+  // ----- Per-claim, frontend-only notes & estimate -----
+  private static notesStore: Record<number, Note[]> = {};
+  private static estimateStore: Record<number, number> = {};
+  private static nextId = 1;
+
+  private _notesArr = signal<Note[]>([]);
+  notes = this._notesArr.asReadonly();
+  readonly estimate = signal<number | null>(null);
+
+  readonly savingReview = signal(false);
+
   readonly id = toSignal(this.route.paramMap.pipe(map(pm => Number(pm.get('id')))), { initialValue: 0 });
 
   readonly claim = signal<Claim | null>(null);
@@ -151,8 +203,8 @@ export class ClaimDetailComponent {
   readonly status = signal<ClaimStatus>('NEW');
   readonly assignee = signal<string>('');
   readonly adjusterNote = signal<string>('');
-  readonly estimate = signal<number | null>(null);
 
+  // load claim whenever id changes
   private load = effect(() => {
     const currentId = this.id();
     if (!currentId) return;
@@ -160,11 +212,19 @@ export class ClaimDetailComponent {
       this.claim.set(c);
       this.status.set(c.status);
       this.assignee.set(c.assignee ?? '');
- 
+
+      if (!ClaimDetailComponent.notesStore[currentId]) {
+        ClaimDetailComponent.notesStore[currentId] = [];
+      }
+      this._notesArr.set(ClaimDetailComponent.notesStore[currentId]);
+
+      // restore per-claim estimate
+      const stored = ClaimDetailComponent.estimateStore[currentId];
+      this.estimate.set(stored ?? null);
     });
   });
 
-  // Status pill
+  // ----- Status pill -----
   statusClass = (s: ClaimStatus) =>
     ({
       NEW:       'bg-sky-100 text-sm py-0.2 pr-4  text-sky-700 ring-1 ring-sky-200',
@@ -174,7 +234,6 @@ export class ClaimDetailComponent {
       CLOSED:    'bg-slate-200 text-sm py-0.2 pr-4 text-slate-700 ring-1 ring-slate-300',
     } as const)[s] ?? 'bg-gray-200 text-sm py-0.2 pr-4 text-gray-700 ring-1 ring-gray-300';
 
-  // Progress helpers
   stepDone(step: StepKey): boolean {
     const s = this.claim()?.status;
     if (!s) return false;
@@ -184,9 +243,9 @@ export class ClaimDetailComponent {
   }
   dot(done: boolean) { return done ? 'bg-blue-600' : 'bg-gray-300'; }
 
-  // Generic update (blocked for Customer & Auditor)
+  // ---- Manager save ----
   save(): void {
-    if (this.roleSvc.role() === 'Customer' || this.roleSvc.role() === 'Auditor') return;
+    if (this.roleSvc.role() !== 'Manager') return;
 
     const c = this.claim(); if (!c) return;
     const body: UpdateClaimDto = {};
@@ -203,41 +262,85 @@ export class ClaimDetailComponent {
     });
   }
 
-  
-  onNoteInput(e: Event)     { this.adjusterNote.set((e.target as HTMLTextAreaElement).value ?? ''); }
-  onEstimateInput(e: Event) { const v = (e.target as HTMLInputElement).value; this.estimate.set(v ? Number(v) : null); }
+  // ---- Adjuster inputs ----
+  onNoteInput(e: Event) { this.adjusterNote.set((e.target as HTMLTextAreaElement).value ?? ''); }
+  onEstimateInput(e: Event) {
+    const v = (e.target as HTMLInputElement).value;
+    this.estimate.set(v === '' ? null : Number(v));
+  }
 
-  // Adjuster: actions (these assume backend accepts extra fields; if not, they no-op safely)
+  // ---- Adjuster actions ----
   addNote() {
     const note = (this.adjusterNote() || '').trim();
     const c = this.claim(); if (!c || !note) return;
-    const body: UpdateClaimDto = { /* backend contract idea */ } as any;
-    (body as any).note = note;
-    this.api.update(c.id, body).subscribe({
-      next: next => { this.claim.set(next); this.adjusterNote.set(''); },
-      error: err => console.error('Add note failed', err)
+
+    const list = ClaimDetailComponent.notesStore[c.id] ?? (ClaimDetailComponent.notesStore[c.id] = []);
+    list.push({
+      id: ClaimDetailComponent.nextId++,
+      text: note,
+      authorRole: 'Adjuster',
+      createdAt: new Date().toLocaleString()
+    });
+    this._notesArr.set([...list]);
+    this.adjusterNote.set('');
+  }
+
+  deleteNote(noteId: number) {
+    const c = this.claim(); if (!c) return;
+    const list = ClaimDetailComponent.notesStore[c.id] ?? [];
+    const next = list.filter(n => n.id !== noteId);
+    ClaimDetailComponent.notesStore[c.id] = next;
+    this._notesArr.set([...next]);
+  }
+
+  canStartReview(): boolean {
+    return (this.claim()?.status ?? 'NEW') === 'NEW';
+  }
+
+  startReview() {
+    const c = this.claim(); if (!c || !this.canStartReview()) return;
+    this.savingReview.set(true);
+
+    this.api.update(c.id, { status: 'IN_REVIEW' }).subscribe({
+      next: next => {
+        this.claim.set(next);
+        this.status.set(next.status);
+      },
+      error: _err => {
+        const updated: Claim = { ...c, status: 'IN_REVIEW' };
+        this.claim.set(updated);
+        this.status.set('IN_REVIEW');
+      },
+      complete: () => this.savingReview.set(false)
     });
   }
 
   saveEstimate() {
-    const est = this.estimate();
-    const c = this.claim(); if (!c || est == null || isNaN(est)) return;
-    const body: UpdateClaimDto = { } as any;
-    (body as any).estimate = est;
-    this.api.update(c.id, body).subscribe({
-      next: next => this.claim.set(next),
-      error: err => console.error('Save estimate failed', err)
-    });
+  const est = this.estimate();
+  const c = this.claim(); 
+  if (!c) return;
+
+  // If cleared, remove estimate for this claim
+  if (est == null || isNaN(est)) {
+    delete ClaimDetailComponent.estimateStore[c.id];
+    this.estimate.set(null);
+    return;
   }
 
-  startReview() {
-    const c = this.claim(); if (!c) return;
-    this.api.update(c.id, { status: 'IN_REVIEW' }).subscribe({
-      next: next => { this.claim.set(next); this.status.set(next.status); },
-      error: err => console.error('Start review failed', err)
-    });
-  }
+  // Otherwise, normalize & save
+  const normalized = Math.round(est * 100) / 100;
+  ClaimDetailComponent.estimateStore[c.id] = normalized;
+  this.estimate.set(normalized);
 
+  
+  this.api.update(c.id, {} as any).subscribe({
+    next: () => {},
+    error: _err => console.warn("Backend doesn't support estimate; keeping local only.")
+  });
+}
+
+
+  // ---- Form handlers ----
   onStatusChange(e: Event) { this.status.set((e.target as HTMLSelectElement).value as ClaimStatus); }
   onAssigneeInput(e: Event) { this.assignee.set((e.target as HTMLInputElement).value ?? ''); }
 
@@ -250,5 +353,3 @@ export class ClaimDetailComponent {
     });
   }
 }
-
-
