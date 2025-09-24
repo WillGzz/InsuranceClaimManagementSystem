@@ -5,9 +5,11 @@ import { Claim, ClaimService } from '../../services/claim.service';
 import { RoleService } from '../../services/role.service';
 import { ClaimStatus } from '../../services/claim.service';
 
+import { HttpClient } from '@angular/common/http';
+
 @Component({
   selector: 'app-claims-list',
-  imports: [RouterLink, DecimalPipe, NgIf],
+  imports: [RouterLink, DecimalPipe, NgIf], 
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex justify-between items-center mb-4 gap-3">
@@ -25,6 +27,14 @@ import { ClaimStatus } from '../../services/claim.service';
           Export CSV
         </button>
       }
+
+      <button *ngIf="roleSvc.role()==='Manager'"
+        class="px-3 py-2 rounded bg-rose-600 text-white text-sm cursor-pointer"
+        (click)="resetData()">
+        Reset Seed Data
+     </button>
+
+
       @if (roleSvc.role() !== 'Auditor' && roleSvc.role() !== 'Adjuster') {
       <a routerLink="/claims/new" class="px-3 py-2 rounded bg-blue-600 text-white text-sm cursor-pointer">+ New Claim</a>
       }
@@ -88,7 +98,7 @@ import { ClaimStatus } from '../../services/claim.service';
 export class ClaimsListComponent {
   private api = inject(ClaimService);
   readonly roleSvc = inject(RoleService);
-
+  private http = inject(HttpClient);
   // writable list we can update
   private all = signal<Claim[]>([]);
   q = signal('');
@@ -113,6 +123,16 @@ export class ClaimsListComponent {
     const v = (e.target as HTMLInputElement)?.value ?? '';
     this.q.set(v);
   }
+
+  resetData() {
+  if (!confirm("Reset all claims and policies to seed data?")) return;
+
+  this.http.post('/api/reset', {}, { responseType: 'text' }).subscribe({
+    next: () => this.api.list().subscribe(list => this.all.set(list ?? [])),
+    error: (err: any) => alert('Reset failed: ' + (err?.error?.message ?? err.statusText ?? err))
+  });
+
+}
 
   statusClass = (s: ClaimStatus) =>
     ({

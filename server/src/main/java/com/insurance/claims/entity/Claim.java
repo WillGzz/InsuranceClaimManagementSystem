@@ -55,6 +55,34 @@ public class Claim {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+
+    public Claim(
+        Long id,
+        Policy policy,
+        LocalDate lossDate,
+        LocalDate reportedDate,
+        ClaimType type,
+        String description,
+        BigDecimal amount,
+        ClaimStatus status,
+        String assignee,
+        Integer riskScore
+) {
+    this.id = id;
+    this.policy = policy;
+    this.lossDate = lossDate;
+    this.reportedDate = reportedDate;
+    this.type = type;
+    this.description = description;
+    this.amount = amount;
+    this.status = status;
+    this.assignee = assignee;
+    this.riskScore = riskScore;
+}
+
+public Claim() {}
+
+
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
