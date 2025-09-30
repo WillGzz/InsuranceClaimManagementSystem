@@ -1,11 +1,13 @@
 services:
   - type: web
-    name: insurance-claims
+    name: insurance-claims-app
     env: docker
     rootDir: server
     plan: free
-    branch: main
     autoDeploy: true
+    healthCheckPath: /
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: default
+      - key: JAVA_OPTS
+        value: "-Xmx512m -Xms256m"
+      - key: SERVER_PORT
+        value: 8080
