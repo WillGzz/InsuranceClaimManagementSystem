@@ -1,8 +1,14 @@
 services:
   - type: web
-    name: claims-app
-    rootDir: InsuranceClaimManagementApp/server
+    name: insurance-claims-app
     env: java
+    plan: free
+    runtime: docker
+    region: Ohio
+
     buildCommand: ./mvnw clean package -DskipTests
     startCommand: java -jar target/*.jar
-    plan: free
+
+    envVars:
+      - key: JAVA_VERSION
+        value: 17
