@@ -7,6 +7,9 @@ business rules (coverage checks by loss date, risk scoring, SLA timestamps) and 
 
 ---
 
+### Note
+ Backend may take 15s-30s to be fully set up on first request (free hosting).
+
 ## Features
 
 - **Claim Management**
