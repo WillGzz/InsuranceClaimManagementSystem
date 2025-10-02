@@ -17,7 +17,7 @@ RUN ./mvnw clean package -DskipTests
 
 
 # ---- Build frontend (Angular) ----
-FROM node:18 AS frontend-builder
+FROM node:22 AS frontend-builder
 WORKDIR /app
 
 # Copy Angular source
