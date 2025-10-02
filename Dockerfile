@@ -16,7 +16,7 @@ COPY server/src src
 RUN ./mvnw clean package -DskipTests
 
 
-# ---- Build frontend (Angular) ----
+# ---- Build frontend (Angular 20) ----
 FROM node:22 AS frontend-builder
 WORKDIR /app
 
@@ -24,9 +24,13 @@ WORKDIR /app
 COPY client/ ./client/
 WORKDIR /app/client
 
-# Install deps & build Angular for production
+# Install deps
 RUN npm install
-RUN npm run build --configuration production
+
+# Build Angular (production)
+RUN npm run build -- --configuration production
+# or equivalently:
+# RUN npx ng build --configuration production
 
 
 # ---- Runtime image ----
@@ -37,7 +41,7 @@ WORKDIR /app
 COPY --from=backend-builder /app/target/claims-0.0.1-SNAPSHOT.jar app.jar
 
 # Copy Angular build into Spring Boot static resources
-COPY --from=frontend-builder /app/client/dist/client/browser/ /app/static/
+COPY --from=frontend-builder /app/client/dist/client/browser /app/static/
 
 # Expose port
 EXPOSE 8080
