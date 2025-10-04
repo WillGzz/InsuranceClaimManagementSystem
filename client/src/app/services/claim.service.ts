@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment'
 
 export type ClaimStatus = 'NEW'|'IN_REVIEW'|'APPROVED'|'DENIED'|'CLOSED';
 export type ClaimType = 'ACCIDENT'|'THEFT'|'INJURY'|'FIRE'|'OTHER';
@@ -37,7 +38,7 @@ export interface UpdateClaimDto {
 @Injectable({ providedIn: 'root' })
 export class ClaimService {
   private readonly http = inject(HttpClient);
-  private readonly base = '/api/claims';
+  private readonly base = `${environment.apiUrl}/claims`;
 
   list(): Observable<Claim[]> { return this.http.get<Claim[]>(this.base); }
   get(id: number): Observable<Claim> { return this.http.get<Claim>(`${this.base}/${id}`); }

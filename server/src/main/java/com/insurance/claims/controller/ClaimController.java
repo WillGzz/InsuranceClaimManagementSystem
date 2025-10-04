@@ -30,9 +30,9 @@ public class ClaimController {
     public ResponseEntity<ClaimResponseDto> create(
             @Valid @RequestBody CreateClaimDto req,
             @RequestHeader(value = "X-Role", required = false) String role) {
-      
-                if (role == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401 if no role header 
+
+        if (role == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401 if no role header
         }
         ClaimResponseDto created = service.createClaim(req, roleOrDefault(role));
         URI location = URI.create("/api/claims/" + created.getId());
@@ -43,13 +43,13 @@ public class ClaimController {
     public ResponseEntity<List<ClaimResponseDto>> list() {
         List<ClaimResponseDto> claims = service.listClaims();
         return claims.isEmpty()
-                ? ResponseEntity.noContent().build()              // 204 if nothing to show
-                : ResponseEntity.ok(claims);                      
+                ? ResponseEntity.noContent().build() // 204 if nothing to show
+                : ResponseEntity.ok(claims);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ClaimResponseDto> get(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getClaim(id));           
+        return ResponseEntity.ok(service.getClaim(id));
     }
 
     @PutMapping("/{id}")
@@ -61,7 +61,7 @@ public class ClaimController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
         }
         ClaimResponseDto updated = service.updateClaim(id, req, roleOrDefault(role));
-        return ResponseEntity.ok(updated);                         // 200 with body
+        return ResponseEntity.ok(updated); // 200 with body
     }
 
     @DeleteMapping("/{id}")
@@ -73,15 +73,13 @@ public class ClaimController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         if (!"Manager".equals(roleOrDefault(role))) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();  //403
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403
         }
 
         service.deleteClaim(id);
         return ResponseEntity.noContent().build();
     }
 
-
-    
     @GetMapping(value = "/{id}.xml", produces = MediaType.APPLICATION_XML_VALUE)
     public ResponseEntity<String> getAsXml(@PathVariable Long id) {
         ClaimResponseDto c = service.getClaim(id);
@@ -104,10 +102,11 @@ public class ClaimController {
                 safe(c.getType()),
                 safe(c.getStatus()),
                 c.getAmount(),
-                c.getRiskScore() == null ? 0 : c.getRiskScore()
-        );
-        return ResponseEntity.ok(xml);                          
+                c.getRiskScore() == null ? 0 : c.getRiskScore());
+        return ResponseEntity.ok(xml);
     }
 
-    private String safe(String s) { return s == null ? "" : s; }
+    private String safe(String s) {
+        return s == null ? "" : s;
+    }
 }
