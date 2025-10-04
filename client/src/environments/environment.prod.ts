@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: "https://<your-railway-app>.up.railway.app/api"
+  apiUrl: "insurance-claims-app-production.up.railway.app/api"
 };
