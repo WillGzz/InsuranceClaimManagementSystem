@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment'
+import { environment } from '../../environments/environment.prod'
 
 export type ClaimStatus = 'NEW'|'IN_REVIEW'|'APPROVED'|'DENIED'|'CLOSED';
 export type ClaimType = 'ACCIDENT'|'THEFT'|'INJURY'|'FIRE'|'OTHER';
