@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment.prod'
+import { environment } from '../../environments/environment'
 
 export type ClaimStatus = 'NEW'|'IN_REVIEW'|'APPROVED'|'DENIED'|'CLOSED';
 export type ClaimType = 'ACCIDENT'|'THEFT'|'INJURY'|'FIRE'|'OTHER';
@@ -45,4 +45,8 @@ export class ClaimService {
   create(body: CreateClaimDto): Observable<Claim> { return this.http.post<Claim>(this.base, body); }
   update(id: number, body: UpdateClaimDto): Observable<Claim> { return this.http.put<Claim>(`${this.base}/${id}`, body); }
   delete(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/${id}`); }
+  reset(): Observable<string> {
+  return this.http.post(`${environment.apiUrl}/reset`, {}, { responseType: 'text' });
+}
+
 }

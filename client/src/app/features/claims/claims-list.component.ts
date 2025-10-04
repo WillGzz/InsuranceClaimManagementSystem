@@ -124,15 +124,15 @@ export class ClaimsListComponent {
     this.q.set(v);
   }
 
-  resetData() {
+ resetData() {
   if (!confirm("Reset all claims and policies to seed data?")) return;
 
-  this.http.post('/api/reset', {}, { responseType: 'text' }).subscribe({
+  this.api.reset().subscribe({
     next: () => this.api.list().subscribe(list => this.all.set(list ?? [])),
     error: (err: any) => alert('Reset failed: ' + (err?.error?.message ?? err.statusText ?? err))
   });
-
 }
+
 
   statusClass = (s: ClaimStatus) =>
     ({
