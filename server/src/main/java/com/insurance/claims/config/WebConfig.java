@@ -20,7 +20,8 @@ public class WebConfig implements WebMvcConfigurer {
         public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**") // only your APIs, not static files
                                 .allowedOrigins(
-                                                "http://localhost:4200"// Replace with actual Vercel domain
+                                                "http://localhost:4200",
+                                                "https://insurance-claim-management-system-6rf2pf6gh.vercel.app"
                                 )
                                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                                 .allowedHeaders("*");
