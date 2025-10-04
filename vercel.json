@@ -3,7 +3,7 @@
     {
       "src": "client/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist/client/browser" }
+      "config": { "distDir": "client/dist/client" }
     }
   ],
   "routes": [
