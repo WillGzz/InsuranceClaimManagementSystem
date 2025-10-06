@@ -48,7 +48,7 @@ public class ResetService {
                 "Minor fender bender, rear bumper damage.",
                 new BigDecimal("2450.00"),
                 ClaimStatus.IN_REVIEW,
-                "adjuster1",
+                "adjuster1@example.com",
                 50
         ));
 
@@ -60,7 +60,7 @@ public class ResetService {
                 "Kitchen fire caused smoke damage.",
                 new BigDecimal("18900.00"),
                 ClaimStatus.NEW,
-                null,
+                "adjuster2@example.com",
                 80
         ));
 
@@ -72,7 +72,7 @@ public class ResetService {
                 "Office break-in, stolen laptops.",
                 new BigDecimal("600.00"),
                 ClaimStatus.CLOSED,
-                "adjuster2",
+                "adjuster3@example.com",
                 10
         ));
     }
