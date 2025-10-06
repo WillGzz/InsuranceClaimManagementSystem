@@ -59,47 +59,56 @@ public class ClaimService {
         return toDto(claim);
     }
 
-    public ClaimResponseDto updateClaim(Long id, UpdateClaimDto req, String role) {
-        Claim claim = claimRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Claim not found"));
+   public ClaimResponseDto updateClaim(Long id, UpdateClaimDto req, String role) {
+    Claim claim = claimRepo.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Claim not found"));
 
-        // Roles 
-        // Adjuster can edit their assigned claims; Manager can edit all; Customers
-        // cannot edit after create; Auditors read-only.
-        if ("Customer".equalsIgnoreCase(role)) {
-            throw new SecurityException("Customers cannot update existing claims");
-        }
-        if ("Auditor".equalsIgnoreCase(role)) {
-            throw new SecurityException("Auditors are read-only");
-        }
-        if ("Adjuster".equalsIgnoreCase(role)) {
-            if (claim.getAssignee() == null || !claim.getAssignee().equalsIgnoreCase("ajuster1@example.com")) {
-                throw new SecurityException("Adjuster can only update assigned claims");
-            }
-        }
-        // Manager can proceed; Adjuster allowed past the check above.
+    // ---- Role restrictions ----
+    if ("Customer".equalsIgnoreCase(role)) {
+        throw new SecurityException("Customers cannot update existing claims");
+    }
+    if ("Auditor".equalsIgnoreCase(role)) {
+        throw new SecurityException("Auditors are read-only");
+    }
 
-        // ===== Allowed updates =====
-        if (req.getAmount() != null) {
-            requirePositive(req.getAmount(), "Amount must be positive");
-            claim.setAmount(req.getAmount());
-            // Recompute risk if amount changed
-            int newRisk = computeRiskScoreFromEntity(claim);
-            claim.setRiskScore(newRisk);
+    // ---- Adjuster-specific rule ----
+    if ("Adjuster".equalsIgnoreCase(role)) {
+        // Adjusters can only modify their assigned claims
+        String assigned = claim.getAssignee();
+        if (assigned == null || !assigned.toLowerCase().contains("adjuster")) {
+            throw new SecurityException("Adjuster can only update their assigned claims");
         }
-        if (req.getDescription() != null) {
-            claim.setDescription(req.getDescription());
-        }
-        if (req.getAssignee() != null) {
-            // Manager-only in a real app; we’ll allow here if not Customer/Auditor
-            claim.setAssignee(req.getAssignee());
-        }
+
+        // Allow adjuster to set IN_REVIEW regardless of current status
         if (req.getStatus() != null) {
-            claim.setStatus(ClaimStatus.valueOf(req.getStatus().toUpperCase()));
+            claim.setStatus(ClaimStatus.IN_REVIEW);
+            claim.setUpdatedAt(LocalDateTime.now());
         }
 
+        // Save and return
         return toDto(claimRepo.save(claim));
     }
+
+    // ---- Manager or others (e.g., Admin) ----
+    if (req.getAmount() != null) {
+        requirePositive(req.getAmount(), "Amount must be positive");
+        claim.setAmount(req.getAmount());
+        int newRisk = computeRiskScoreFromEntity(claim);
+        claim.setRiskScore(newRisk);
+    }
+    if (req.getDescription() != null) {
+        claim.setDescription(req.getDescription());
+    }
+    if (req.getAssignee() != null) {
+        claim.setAssignee(req.getAssignee());
+    }
+    if (req.getStatus() != null) {
+        claim.setStatus(ClaimStatus.valueOf(req.getStatus().toUpperCase()));
+        claim.setUpdatedAt(LocalDateTime.now());
+    }
+
+    return toDto(claimRepo.save(claim));
+}
 
     // ===== Helpers =====
 

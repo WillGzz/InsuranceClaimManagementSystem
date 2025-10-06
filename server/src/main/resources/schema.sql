@@ -35,6 +35,6 @@ INSERT INTO policies (policy_number, holder_name, effective_from, effective_to, 
 ('PC-5510', 'Acme Corp', '2024-07-01', '2025-07-01', 'EXPIRED', 2000.00, 100000.00);
 
 INSERT INTO claims ( policy_id, loss_date, reported_date, type, description, amount, status, assignee, risk_score, sla_due_at, created_at, updated_at) VALUES
-(1, '2025-08-01', '2025-08-02', 'ACCIDENT', 'Minor fender bender, rear bumper damage.', 2450.00, 'IN_REVIEW', 'adjuster1', 50, '2025-08-04 12:00:00', '2025-08-02 09:30:00', '2025-08-02 09:30:00'),
-(2, '2025-07-28', '2025-07-28', 'FIRE', 'Kitchen fire caused smoke damage.', 18900.00, 'NEW', NULL, 80, '2025-07-30 14:00:00', '2025-07-28 08:45:00', '2025-07-28 08:45:00'),
-(3, '2025-07-20', '2025-07-21', 'THEFT', 'Office break-in, stolen laptops.', 600.00, 'CLOSED', 'adjuster2', 10, NULL, '2025-07-21 10:15:00', '2025-07-21 10:15:00');
+(1, '2025-08-01', '2025-08-02', 'ACCIDENT', 'Minor fender bender, rear bumper damage.', 2450.00, 'IN_REVIEW', 'adjuster1@example.com', 50, '2025-08-04 12:00:00', '2025-08-02 09:30:00', '2025-08-02 09:30:00'),
+(2, '2025-07-28', '2025-07-28', 'FIRE', 'Kitchen fire caused smoke damage.', 18900.00, 'NEW', 'adjuster2@example.com', 80, '2025-07-30 14:00:00', '2025-07-28 08:45:00', '2025-07-28 08:45:00'),
+(3, '2025-07-20', '2025-07-21', 'THEFT', 'Office break-in, stolen laptops.', 600.00, 'CLOSED', 'adjuster3@example.com', 10, NULL, '2025-07-21 10:15:00', '2025-07-21 10:15:00');

@@ -99,7 +99,7 @@ export class ClaimsListComponent {
   private api = inject(ClaimService);
   readonly roleSvc = inject(RoleService);
   private http = inject(HttpClient);
-  // writable list we can update
+
   private all = signal<Claim[]>([]);
   q = signal('');
 
