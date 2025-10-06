@@ -21,7 +21,7 @@ public class WebConfig implements WebMvcConfigurer {
                 registry.addMapping("/api/**") // only your APIs, not static files
                                 .allowedOrigins(
                                                 "http://localhost:4200",
-                                                "https://insurance-claim-management-system-6rf2pf6gh.vercel.app"
+                                                "https://insurance-claim-management-system1.vercel.app"
                                 )
                                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                                 .allowedHeaders("*");
