@@ -5,8 +5,6 @@
 This is a full stack app that focuses on  managing insurance policies and claims. The backend is a Spring Boot REST API that handles 
 business rules (coverage checks by loss date, risk scoring, SLA timestamps) and role-based authorization. The frontend in Angular lets users list/filter/search claims, create new claims, view claim progress, and—if they’re Managers delete claims.
 
----
-
 ## Features
 
 - **Claim Management**
